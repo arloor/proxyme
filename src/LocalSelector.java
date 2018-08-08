@@ -8,12 +8,13 @@ import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
 
-public class LocalSelector implements Runnable{
-    private static Logger logger=LoggerFactory.getLogger(LocalSelector.class);
+public class LocalSelector implements Runnable {
+    private static Logger logger = LoggerFactory.getLogger(LocalSelector.class);
     private Selector selectorLocal;
     private ServerSocketChannel acceptChannel;
-    private final static LocalSelector instance=new LocalSelector();
-    public static LocalSelector getInstance(){
+    private final static LocalSelector instance = new LocalSelector();
+
+    public static LocalSelector getInstance() {
         return instance;
     }
 
@@ -22,7 +23,7 @@ public class LocalSelector implements Runnable{
         try {
             this.selectorLocal = Selector.open();
             acceptChannel = ServerSocketChannel.open();
-            acceptChannel.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(),8080));
+            acceptChannel.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 8080));
             acceptChannel.configureBlocking(false);
             acceptChannel.register(selectorLocal, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
@@ -30,40 +31,42 @@ public class LocalSelector implements Runnable{
         }
     }
 
-    public void listen(){
-        try {
-            while(true){
-                //循环selctor
-                int numKey= selectorLocal.select();
-                if(numKey>0){
-                    Set<SelectionKey> keys= selectorLocal.selectedKeys();
-                    Iterator<SelectionKey> keyIterator=keys.iterator();
-                    while(keyIterator.hasNext()){
-                        SelectionKey key=keyIterator.next();
-                        if(key.isAcceptable()) {//proxyChannel接收来自浏览器的连接
+    public void listen() {
+
+        while (true) {
+            //循环selctor
+            try {
+                int numKey = selectorLocal.select();
+                if (numKey > 0) {
+                    Set<SelectionKey> keys = selectorLocal.selectedKeys();
+                    Iterator<SelectionKey> keyIterator = keys.iterator();
+                    while (keyIterator.hasNext()) {
+                        SelectionKey key = keyIterator.next();
+                        if (key.isAcceptable()) {//proxyChannel接收来自浏览器的连接
                             accept();
-                        }else if(key.isReadable()){//读来自浏览器的请求
-                            ChannalBridge channalBridge=(ChannalBridge) key.attachment();
+                        } else if (key.isReadable()) {//读来自浏览器的请求
+                            ChannalBridge channalBridge = (ChannalBridge) key.attachment();
                             channalBridge.readLocal();
                         }
                         keyIterator.remove();
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
     }
 
 
-    public void accept(){
+    public void accept() {
         try {
             SocketChannel localChanel = acceptChannel.accept();
             localChanel.configureBlocking(false);
             logger.info("接收浏览器连接: " + localChanel.getRemoteAddress());
-            ChannalBridge channalBridge=new ChannalBridge(localChanel);
+            ChannalBridge channalBridge = new ChannalBridge(localChanel);
 //            channalBridgeHub.add(channalBridge);
-            this.listenLocalChannel(localChanel,channalBridge);
+            this.listenLocalChannel(localChanel, channalBridge);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -71,7 +74,7 @@ public class LocalSelector implements Runnable{
 
     private void listenLocalChannel(SocketChannel localChanel, ChannalBridge channalBridge) {
         try {
-            localChanel.register(selectorLocal,SelectionKey.OP_READ,channalBridge);
+            localChanel.register(selectorLocal, SelectionKey.OP_READ, channalBridge);
             channalBridge.setLocalSelectionKey(localChanel.keyFor(selectorLocal));
         } catch (ClosedChannelException e) {
             e.printStackTrace();
