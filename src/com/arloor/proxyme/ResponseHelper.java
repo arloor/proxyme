@@ -1,3 +1,5 @@
+package com.arloor.proxyme;
+
 public class ResponseHelper {
 
     public static byte[] http404(){

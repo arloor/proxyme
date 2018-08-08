@@ -42,7 +42,7 @@ selector.select()会占有锁，channel.register(selector)需要持有同样的�
 
 这两点，就是最最重要的两点了。
 
-另外还有，因为代理而需要改变的请求头了，参见`RequestHeader.reform()`方法。
+另外还有，因为代理而需要改变的请求头了，参见`com.arloor.proxyme.RequestHeader.reform()`方法。
 
 http代理不神秘。
 

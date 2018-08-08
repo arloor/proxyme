@@ -1,3 +1,5 @@
+package com.arloor.proxyme;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.UnresolvedAddressException;
 import java.util.regex.Pattern;
 
 public class ChannalBridge {

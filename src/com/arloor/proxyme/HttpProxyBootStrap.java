@@ -1,4 +1,11 @@
+package com.arloor.proxyme;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class HttpProxyBootStrap {
+
+    private static Logger logger=LoggerFactory.getLogger(HttpProxyBootStrap.class);
 
     public static void main(String[] args) {
         LocalSelector localSelector =LocalSelector.getInstance();
@@ -8,5 +15,7 @@ public class HttpProxyBootStrap {
         RemoteSelector remoteSelector=RemoteSelector.getInstance();
         Thread remoteSelectorThread=new Thread(remoteSelector,"remoteSlector");
         remoteSelectorThread.start();
+
+        logger.info("在8080端口启动了代理服务");
     }
 }
