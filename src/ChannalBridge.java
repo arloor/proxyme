@@ -148,7 +148,7 @@ public class ChannalBridge {
             if(readNum>0){
                 logger.info("接收响应 "+remoteChannel.getRemoteAddress());
                 remoteBuff.flip();
-                System.out.println(new String(remoteBuff.array()));
+//                System.out.println(new String(remoteBuff.array()));
                 try {
                     localChannel.write(remoteBuff);
                 }catch (ClosedChannelException e){
