@@ -2,7 +2,6 @@ package com.arloor.proxyme;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -18,6 +17,7 @@ public class ChannalBridge {
     private final ByteBuffer remoteBuff=ByteBuffer.allocate(8096);
     private SelectionKey localSelectionKey;
     private SelectionKey remoteSelectionKey;
+    private boolean isHttpsTunnel=false;//标记位 这个bridge是否是https隧道
 
     private static Logger logger=LoggerFactory.getLogger(ChannalBridge.class);
 
@@ -38,9 +38,8 @@ public class ChannalBridge {
                 localSelectionKey.cancel();
                 localChannel.close();
             }
-
             if(numRead>0){
-                readLocalAndSendToRemote();
+                sendToRemote();
             }else if(numRead==0){
                 remoteBuff.clear();
             }else if(numRead==-1){
@@ -48,13 +47,12 @@ public class ChannalBridge {
                 localSelectionKey.cancel();
                 remoteBuff.clear();
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void readLocalAndSendToRemote() throws IOException {
+    private void sendToRemote() throws IOException {
         byte[] readBytes=localBuff.array();
         localBuff.clear();
 
@@ -63,71 +61,127 @@ public class ChannalBridge {
         String line=br.readLine();
         //如果是request line 例如： GET http://detectportal.firefox.com/success.txt HTTP/1.1
         if(Pattern.matches(".* .* HTTP.*",line)){
+            logger.info("请求—— "+line);
 
             String[] requestLineCells=line.split(" ");
             String method=requestLineCells[0];
             String urlstr=requestLineCells[1];
             String protocal=requestLineCells[2];
-            logger.info("请求—— "+urlstr);
             RequestHeader requestHeader=new RequestHeader(method,urlstr,protocal);
             while((line=br.readLine())!=null&&line.length()!=0){
 //                    System.out.println(line);
                 String[] key_value=line.split(":");
                 requestHeader.setHeader(key_value[0],key_value[1]);
             }
-            requestHeader.reform();
-
-            //创建remoteChannel
-            if(remoteChannel==null){
-                try {
-                    remoteChannel=SocketChannel.open(new InetSocketAddress(requestHeader.getHost(),requestHeader.getPort()));
-                }catch (Exception e){
-                    //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
-                    logger.warn("连接到web服务器失败，返回404响应，关闭localChannel");
-                    //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
-                    byte[] response404=ResponseHelper.http404();
-                    localBuff.put(response404);
-                    localBuff.flip();
-                    localChannel.write(localBuff);
-                    localBuff.clear();
-                    localChannel.close();
-                    localSelectionKey.cancel();
-                    return;
+            if(!isHttpsTunnel&&!method.equals("CONNECT")){
+                if(remoteChannel==null){
+                    requestHeader.reform();
+                    //创建remoteChannel
+                    if(!connectToRemote(requestHeader.getHost(), requestHeader.getPort())){
+                        return;
+                    }
                 }
-                remoteChannel.configureBlocking(false);
-                logger.info("创建远程连接: " + remoteChannel.getRemoteAddress());
-                RemoteSelector remoteSelector=RemoteSelector.getInstance();
-                remoteSelector.addWaitRegistBridge(this);
+                sendHeadersToRemote(requestHeader);
+                sendBodyToRemote(readBytes);
+            }else {//这是一个https的connect隧道请求。method="CONNECT"
+                isHttpsTunnel=true;
+                String host=urlstr.split(":")[0];
+                String portStr=urlstr.split(":")[1];
+                int port=Integer.parseInt(portStr);
+                if(connectToRemote(host,port)){
+                    sendBodyToRemote(readBytes);
+                }
             }
-            byte[] requestHeaderBytes=requestHeader.toBytes();
-//                System.out.print(new String(requestHeaderBytes));
-            remoteBuff.put(requestHeaderBytes);
-            remoteBuff.flip();//flip很关键 不flip 408错误
-            try {
-                remoteChannel.write(remoteBuff);
-            }catch (ClosedChannelException e){
-                logger.warn("试图写已关闭的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是remoteChannel close之后的=null。");
-                //保险起见，但应该不会执行这四句
-                remoteChannel.close();
-                remoteSelectionKey.cancel();
-                remoteChannel=null;
-                remoteSelectionKey=null;
-            }catch (IOException e){
-                logger.warn("大概率出现了如下异常: 远程主机强迫关闭了一个现有的连接。看来是远程服务器的socket被异常关闭了。下面关闭这个远程socketChannal");
-                logger.warn("异常信息： "+e.getMessage()+" 是不是上面说的？");
-                remoteChannel.close();
-                remoteSelectionKey.cancel();
-                remoteChannel=null;
-                remoteSelectionKey=null;
-            }
-            remoteBuff.clear();
+        }else sendToRemoteWildly(readBytes);
+    }
+
+    private void sendBodyToRemote(byte[] readBytes) {
+        try {
             byte[] body=getRequestBody(readBytes);
             if(body!=null){
                 remoteBuff.put(body);
                 remoteBuff.flip();
-                remoteChannel.write(remoteBuff);
-                remoteBuff.clear();
+                writeBuffToRemoteChannel();
             }
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private boolean connectToRemote(String host, int port) throws IOException {
+        try {
+            remoteChannel=SocketChannel.open(new InetSocketAddress(host,port));
+        }catch (Exception e){
+            //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
+            logger.warn("连接到web服务器失败，返回404响应，关闭localChannel");
+            //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
+            byte[] response404=ResponseHelper.http404();
+            localBuff.put(response404);
+            localBuff.flip();
+            localChannel.write(localBuff);
+            localBuff.clear();
+            localChannel.close();
+            localSelectionKey.cancel();
+            return false;
+        }
+        remoteChannel.configureBlocking(false);
+        logger.info("创建远程连接: " + remoteChannel.getRemoteAddress());
+        RemoteSelector remoteSelector=RemoteSelector.getInstance();
+        remoteSelector.addWaitRegistBridge(this);
+        return true;
+    }
+
+    private void sendToRemoteWildly(byte[] readBytes) {
+        //不含http请求头（是未完请求的剩余部分）或者是https流量
+        //直接向remote写
+        try {
+            remoteBuff.put(readBytes);
+            remoteBuff.flip();
+            writeBuffToRemoteChannel();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    private void sendHeadersToRemote(RequestHeader requestHeader) {
+        try {
+
+            byte[] requestHeaderBytes=requestHeader.toBytes();
+//                System.out.print(new String(requestHeaderBytes));
+            remoteBuff.put(requestHeaderBytes);
+            remoteBuff.flip();//flip很关键 不flip 408错误
+            writeBuffToRemoteChannel();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeBuffToRemoteChannel() throws IOException{
+        try {
+            remoteChannel.write(remoteBuff);
+        }catch (NullPointerException e){
+            System.out.println("null");
+            e.printStackTrace();
+            return;
+        }catch (ClosedChannelException e){
+            logger.warn("试图写已关闭的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是remoteChannel close之后的=null。");
+            //保险起见，但应该不会执行这四句
+            remoteChannel.close();
+            remoteSelectionKey.cancel();
+            remoteChannel=null;
+            remoteSelectionKey=null;
+        }catch (IOException e){
+            logger.warn("大概率出现了如下异常: 远程主机强迫关闭了一个现有的连接。看来是远程服务器的socket被异常关闭了。下面关闭这个远程socketChannal");
+            logger.warn("异常信息： "+e.getMessage()+" 是不是上面说的？");
+            remoteChannel.close();
+            remoteSelectionKey.cancel();
+            remoteChannel=null;
+            remoteSelectionKey=null;
+        }finally {
+            remoteBuff.clear();
         }
     }
 
@@ -163,9 +217,9 @@ public class ChannalBridge {
                     logger.warn("异常信息： "+e.getMessage()+" 是不是上面说的？");
                     localChannel.close();
                     localSelectionKey.cancel();
+                }finally {
+                    remoteBuff.clear();
                 }
-
-                remoteBuff.clear();
             }else if(readNum==0){
                 remoteBuff.clear();
             }else if(readNum==-1){

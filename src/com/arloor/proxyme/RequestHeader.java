@@ -1,11 +1,15 @@
 package com.arloor.proxyme;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RequestHeader {
+    private static Logger logger=LoggerFactory.getLogger(RequestHeader.class);
     private String method;
     private String path;
     private String protocol;
@@ -91,6 +95,10 @@ public class RequestHeader {
             replaceKey("Proxy-Connection","Connection");
         } catch (MalformedURLException e) {
             e.printStackTrace();
+            //虽然设置了这个代理仅仅代理http，但是还是会有connect请求（https）
+            //todo：完成https代理
+            logger.warn("试图处理connect请求"+" —— "+method+" "+path+" "+protocol);
+            System.out.println(new String(toBytes()));
         }
     }
 

@@ -44,11 +44,15 @@ public class LocalSelector implements Runnable {
                     Iterator<SelectionKey> keyIterator = keys.iterator();
                     while (keyIterator.hasNext()) {
                         SelectionKey key = keyIterator.next();
-                        if (key.isAcceptable()) {//proxyChannel接收来自浏览器的连接
-                            accept();
-                        } else if (key.isReadable()) {//读来自浏览器的请求
-                            ChannalBridge channalBridge = (ChannalBridge) key.attachment();
-                            channalBridge.readLocal();
+                        try{
+                            if (key.isReadable()) {//读来自浏览器的请求
+                                ChannalBridge channalBridge = (ChannalBridge) key.attachment();
+                                channalBridge.readLocal();
+                            }else if (key.isAcceptable()) {//proxyChannel接收来自浏览器的连接
+                                accept();
+                            }
+                        }catch (CancelledKeyException e){
+                            logger.warn("selection已经关闭，不处理");
                         }
                         keyIterator.remove();
                     }
