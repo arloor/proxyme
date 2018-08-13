@@ -12,11 +12,13 @@ import java.util.regex.Pattern;
 
 public class ChannalBridge {
     private SocketChannel localChannel;
-    private SocketChannel remoteChannel;
+    private volatile SocketChannel remoteChannel;
     private final ByteBuffer local2RemoteBuff =ByteBuffer.allocate(8096);
     private final ByteBuffer remote2LocalBuff =ByteBuffer.allocate(8096);
     private SelectionKey localSelectionKey;
     private SelectionKey remoteSelectionKey;
+    private String host;
+    private int port;
     private boolean isHttpsTunnel=false;//标记位 这个bridge是否是https隧道
 
     private static Logger logger=LoggerFactory.getLogger(ChannalBridge.class);
@@ -39,7 +41,7 @@ public class ChannalBridge {
                 localChannel.close();
             }
             if(numRead>0){
-                sendToRemote();
+                sendToRemote(numRead);
             }else if(numRead==0){
                 remote2LocalBuff.clear();
             }else if(numRead==-1){
@@ -52,7 +54,7 @@ public class ChannalBridge {
         }
     }
 
-    private void sendToRemote() throws IOException {
+    private void sendToRemote(int numRead) throws IOException {
         byte[] readBytes= local2RemoteBuff.array();
         local2RemoteBuff.clear();
 
@@ -82,25 +84,34 @@ public class ChannalBridge {
                     }
                 }
                 sendHeadersToRemote(requestHeader);
-                sendBodyToRemote(readBytes);
+                sendBodyToRemote(readBytes, numRead);
             }else {//这是一个https的connect隧道请求。method="CONNECT"
                 isHttpsTunnel=true;
                 String host=urlstr.split(":")[0];
                 String portStr=urlstr.split(":")[1];
                 int port=Integer.parseInt(portStr);
                 if(connectToRemote(host,port)){
-                    sendBodyToRemote(readBytes);
+                    //
+                    remote2LocalBuff.put(ResponseHelper.httpsTunnelEstablished());
+                    remote2LocalBuff.flip();
+                    localChannel.write(remote2LocalBuff);
+                    remote2LocalBuff.clear();
+                    sendBodyToRemote(readBytes,numRead);
+                }else{
+                    return;
                 }
             }
-        }else sendToRemoteWildly(readBytes);
+        }else {
+            sendToRemoteWildly(readBytes,numRead);
+        }
     }
 
-    private void sendBodyToRemote(byte[] readBytes) {
+    private void sendBodyToRemote(byte[] readBytes, int numRead) {
         try {
-            byte[] body=getRequestBody(readBytes);
+            byte[] body=getRequestBody(readBytes,numRead);
             if(body!=null){
                 local2RemoteBuff.put(body);
-                writeBuffToRemoteChannel();
+                writeBuffToRemoteChannel(numRead);
             }
         }catch (IOException e) {
             e.printStackTrace();
@@ -109,6 +120,8 @@ public class ChannalBridge {
     }
 
     private boolean connectToRemote(String host, int port) throws IOException {
+        this.host=host;
+        this.port=port;
         try {
             remoteChannel=SocketChannel.open(new InetSocketAddress(host,port));
         }catch (Exception e){
@@ -131,12 +144,12 @@ public class ChannalBridge {
         return true;
     }
 
-    private void sendToRemoteWildly(byte[] readBytes) {
+    private void sendToRemoteWildly(byte[] readBytes, int numRead) {
         //不含http请求头（是未完请求的剩余部分）或者是https流量
         //直接向remote写
         try {
             local2RemoteBuff.put(readBytes);
-            writeBuffToRemoteChannel();
+            writeBuffToRemoteChannel(numRead);
         }catch (IOException e){
             e.printStackTrace();
         }
@@ -148,22 +161,38 @@ public class ChannalBridge {
 
             byte[] requestHeaderBytes=requestHeader.toBytes();
             local2RemoteBuff.put(requestHeaderBytes);
-            writeBuffToRemoteChannel();
+            writeBuffToRemoteChannel(requestHeaderBytes.length);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void writeBuffToRemoteChannel() throws IOException{
+    private void writeBuffToRemoteChannel(int numRead) throws IOException{
         local2RemoteBuff.flip();//flip很关键 不flip 408错误
+//        while (remoteChannel==null){
+//            try {
+//                Thread.sleep(200);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        local2RemoteBuff.limit(numRead);
         try {
-            remoteChannel.write(local2RemoteBuff);
+            if(remoteChannel==null){
+                return;
+            }
+            int writeNum= remoteChannel.write(local2RemoteBuff);
+            logger.info(writeNum+" 向"+remoteChannel+"写了这么多字节");
         }catch (NullPointerException e){
-            System.out.println("null");
-            e.printStackTrace();
+            if(remoteChannel==null){
+                logger.warn("试图写已为null的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是在试图写到remoteChnanel前判断是否为null");
+            }else {
+                e.printStackTrace();
+            }
             return;
         }catch (ClosedChannelException e){
+            e.printStackTrace();
             logger.warn("试图写已关闭的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是remoteChannel close之后的=null。");
             //保险起见，但应该不会执行这四句
             remoteChannel.close();
@@ -171,6 +200,7 @@ public class ChannalBridge {
             remoteChannel=null;
             remoteSelectionKey=null;
         }catch (IOException e){
+            e.printStackTrace();
             logger.warn("大概率出现了如下异常: 远程主机强迫关闭了一个现有的连接。看来是远程服务器的socket被异常关闭了。下面关闭这个远程socketChannal");
             logger.warn("异常信息： "+e.getMessage()+" 是不是上面说的？");
             remoteChannel.close();
@@ -214,8 +244,6 @@ public class ChannalBridge {
                     logger.warn("异常信息： "+e.getMessage()+" 是不是上面说的？");
                     localChannel.close();
                     localSelectionKey.cancel();
-                }finally {
-                    remote2LocalBuff.clear();
                 }
             }else if(readNum==0){
                 remote2LocalBuff.clear();
@@ -233,12 +261,14 @@ public class ChannalBridge {
 
         } catch (IOException e) {
             e.printStackTrace();
+        }finally {
+            remote2LocalBuff.clear();
         }
     }
 
-    private byte[] getRequestBody(byte[] request){
-        int requestLength=request.length;
-        for (int i = 0; i <request.length ; i++) {
+    private byte[] getRequestBody(byte[] request, int numRead){
+        int requestLength=numRead;
+        for (int i = 0; i <requestLength ; i++) {
             if(request[i]==0){
                 requestLength=i;
                 break;

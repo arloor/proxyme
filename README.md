@@ -1,6 +1,6 @@
 # proxyme 一个http代理
 
-使用java NIO的http代理。目前仅支持http，不支持https（不支持隧道）。
+使用java NIO的http代理。支持https。建议不要再chrome上使用本代理，因为chrome本身会请求很多谷歌的api，结果被墙住了，又只有两个线程，导致其他都被阻塞，很尴尬。
 
 之前也打算做过这个东西，结果做出来的有点缺陷（现在想可能是selector中锁的问题，忘记了）。这大概隔了半年，这个项目的http代理功能实现了。
 

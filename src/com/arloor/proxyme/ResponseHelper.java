@@ -12,4 +12,11 @@ public class ResponseHelper {
         sb.append("the url is unvalid! -_-!\n");
         return sb.toString().getBytes();
     }
+    public static byte[] httpsTunnelEstablished(){
+        StringBuilder sb=new StringBuilder();
+        sb.append("HTTP/1.0 200 Connection Established\r\n");
+        sb.append("Proxy-agent: Netscape-Proxy/1.1\r\n");
+        sb.append("\r\n");
+        return sb.toString().getBytes();
+    }
 }
