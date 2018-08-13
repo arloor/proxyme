@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 public class ChannalBridge {
     private SocketChannel localChannel;
     private SocketChannel remoteChannel;
-    private final ByteBuffer localBuff=ByteBuffer.allocate(8096);
-    private final ByteBuffer remoteBuff=ByteBuffer.allocate(8096);
+    private final ByteBuffer local2RemoteBuff =ByteBuffer.allocate(8096);
+    private final ByteBuffer remote2LocalBuff =ByteBuffer.allocate(8096);
     private SelectionKey localSelectionKey;
     private SelectionKey remoteSelectionKey;
     private boolean isHttpsTunnel=false;//标记位 这个bridge是否是https隧道
@@ -29,7 +29,7 @@ public class ChannalBridge {
         try {
             int numRead=0;
             try {
-                numRead=localChannel.read(localBuff);
+                numRead=localChannel.read(local2RemoteBuff);
             }catch (IOException e){
                 //todo:应该是出现了"你的主机中的软件中止了一个已建立的连接。"的异常  研究为什么会出现这个问题
                 //一篇博文：https://blog.csdn.net/abc_key/article/details/29295569
@@ -41,11 +41,11 @@ public class ChannalBridge {
             if(numRead>0){
                 sendToRemote();
             }else if(numRead==0){
-                remoteBuff.clear();
+                remote2LocalBuff.clear();
             }else if(numRead==-1){
                 localChannel.close();
                 localSelectionKey.cancel();
-                remoteBuff.clear();
+                remote2LocalBuff.clear();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,8 +53,8 @@ public class ChannalBridge {
     }
 
     private void sendToRemote() throws IOException {
-        byte[] readBytes=localBuff.array();
-        localBuff.clear();
+        byte[] readBytes= local2RemoteBuff.array();
+        local2RemoteBuff.clear();
 
         ByteArrayInputStream byteArrayInputStream=new ByteArrayInputStream(readBytes);
         BufferedReader br=new BufferedReader(new InputStreamReader(byteArrayInputStream));
@@ -99,8 +99,7 @@ public class ChannalBridge {
         try {
             byte[] body=getRequestBody(readBytes);
             if(body!=null){
-                remoteBuff.put(body);
-                remoteBuff.flip();
+                local2RemoteBuff.put(body);
                 writeBuffToRemoteChannel();
             }
         }catch (IOException e) {
@@ -117,10 +116,10 @@ public class ChannalBridge {
             logger.warn("连接到web服务器失败，返回404响应，关闭localChannel");
             //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
             byte[] response404=ResponseHelper.http404();
-            localBuff.put(response404);
-            localBuff.flip();
-            localChannel.write(localBuff);
-            localBuff.clear();
+            local2RemoteBuff.put(response404);
+            local2RemoteBuff.flip();
+            localChannel.write(local2RemoteBuff);
+            local2RemoteBuff.clear();
             localChannel.close();
             localSelectionKey.cancel();
             return false;
@@ -136,8 +135,7 @@ public class ChannalBridge {
         //不含http请求头（是未完请求的剩余部分）或者是https流量
         //直接向remote写
         try {
-            remoteBuff.put(readBytes);
-            remoteBuff.flip();
+            local2RemoteBuff.put(readBytes);
             writeBuffToRemoteChannel();
         }catch (IOException e){
             e.printStackTrace();
@@ -149,9 +147,7 @@ public class ChannalBridge {
         try {
 
             byte[] requestHeaderBytes=requestHeader.toBytes();
-//                System.out.print(new String(requestHeaderBytes));
-            remoteBuff.put(requestHeaderBytes);
-            remoteBuff.flip();//flip很关键 不flip 408错误
+            local2RemoteBuff.put(requestHeaderBytes);
             writeBuffToRemoteChannel();
 
         } catch (IOException e) {
@@ -160,8 +156,9 @@ public class ChannalBridge {
     }
 
     private void writeBuffToRemoteChannel() throws IOException{
+        local2RemoteBuff.flip();//flip很关键 不flip 408错误
         try {
-            remoteChannel.write(remoteBuff);
+            remoteChannel.write(local2RemoteBuff);
         }catch (NullPointerException e){
             System.out.println("null");
             e.printStackTrace();
@@ -181,7 +178,7 @@ public class ChannalBridge {
             remoteChannel=null;
             remoteSelectionKey=null;
         }finally {
-            remoteBuff.clear();
+            local2RemoteBuff.clear();
         }
     }
 
@@ -189,7 +186,7 @@ public class ChannalBridge {
         try {
             int readNum=0;
             try {
-                readNum=remoteChannel.read(remoteBuff);
+                readNum=remoteChannel.read(remote2LocalBuff);
             }catch (IOException  e){
                 //todo:应该是出现了"远程主机强迫关闭了一个现有的连接。"的异常 研究为什么会出现这个问题
                 //一篇博文：https://blog.csdn.net/abc_key/article/details/29295569
@@ -202,10 +199,10 @@ public class ChannalBridge {
             }
             if(readNum>0){
                 logger.info("接收响应 "+remoteChannel.getRemoteAddress());
-                remoteBuff.flip();
-//                System.out.println(new String(remoteBuff.array()));
+                remote2LocalBuff.flip();
+//                System.out.println(new String(remote2LocalBuff.array()));
                 try {
-                    localChannel.write(remoteBuff);
+                    localChannel.write(remote2LocalBuff);
                 }catch (ClosedChannelException e){
                     logger.warn("过期的响应，本地channel已经关闭。清理过期的远程channel");
                     remoteChannel.close();
@@ -218,10 +215,10 @@ public class ChannalBridge {
                     localChannel.close();
                     localSelectionKey.cancel();
                 }finally {
-                    remoteBuff.clear();
+                    remote2LocalBuff.clear();
                 }
             }else if(readNum==0){
-                remoteBuff.clear();
+                remote2LocalBuff.clear();
             }else if(readNum==-1){
                 remoteChannel.close();
                 remoteSelectionKey.cancel();
@@ -231,7 +228,7 @@ public class ChannalBridge {
                 //也就避免了产生channel已经close的异常，也保证了刷新的成功。
                 remoteChannel=null;
                 remoteSelectionKey=null;
-                remoteBuff.clear();
+                remote2LocalBuff.clear();
             }
 
         } catch (IOException e) {

@@ -34,7 +34,6 @@ public class LocalSelector implements Runnable {
     }
 
     public void listen() {
-
         while (true) {
             //循环selctor
             try {
