@@ -183,7 +183,7 @@ public class ChannalBridge {
                 return;
             }
             int writeNum= remoteChannel.write(local2RemoteBuff);
-            logger.info(writeNum+" 向"+remoteChannel+"写了这么多字节");
+//            logger.info(writeNum+" 向"+remoteChannel+"写了这么多字节");
         }catch (NullPointerException e){
             if(remoteChannel==null){
                 logger.warn("试图写已为null的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是在试图写到remoteChnanel前判断是否为null");
