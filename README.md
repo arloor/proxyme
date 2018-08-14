@@ -7,24 +7,27 @@
 ## 运行日志
 
 ```
-11:14:31.760 [localSelector] INFO com.arloor.proxyme.LocalSelector - 接收浏览器连接: /127.0.0.1:50057
-11:14:31.760 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 请求—— CONNECT www.bing.com:443 HTTP/1.1
-11:14:31.838 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 创建远程连接: www.bing.com/202.89.233.101:443
-11:14:31.838 [remoteSlector] INFO com.arloor.proxyme.RemoteSelector - 注册remoteChannel到remoteSelector。remoteChannel: www.bing.com/202.89.233.101:443
-11:14:31.838 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求517 -->www.bing.com/202.89.233.101:443
-11:14:31.947 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应2720 <-- www.bing.com/202.89.233.101:443
-11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <-- www.bing.com/202.89.233.101:443
-11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <-- www.bing.com/202.89.233.101:443
-11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1361 <-- www.bing.com/202.89.233.101:443
-11:14:31.963 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求93 -->www.bing.com/202.89.233.101:443
-11:14:31.963 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求811 -->www.bing.com/202.89.233.101:443
-11:14:32.041 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应120 <-- www.bing.com/202.89.233.101:443
-11:14:32.041 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求38 -->www.bing.com/202.89.233.101:443
-11:14:32.119 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应38 <-- www.bing.com/202.89.233.101:443
-11:14:32.166 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应481 <-- www.bing.com/202.89.233.101:443
-11:14:32.181 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应38 <-- www.bing.com/202.89.233.101:443
-11:14:32.244 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求260 -->www.bing.com/202.89.233.101:443
-11:14:32.369 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应421 <-- www.bing.com/202.89.233.101:443
+11:23:08.883 [main] INFO com.arloor.proxyme.HttpProxyBootStrap - 在8080端口启动了代理服务
+11:23:12.208 [localSelector] INFO com.arloor.proxyme.LocalSelector - 接收浏览器连接: /127.0.0.1:50317
+11:23:12.210 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 请求—— CONNECT cn.bing.com:443 HTTP/1.1
+11:23:12.291 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 创建远程连接: cn.bing.com/202.89.233.100:443
+11:23:12.291 [remoteSlector] INFO com.arloor.proxyme.RemoteSelector - 注册remoteChannel到remoteSelector。remoteChannel: cn.bing.com/202.89.233.100:443
+11:23:12.298 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求517 -->cn.bing.com/202.89.233.100:443
+11:23:12.365 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应2720 <--cn.bing.com/202.89.233.100:443
+11:23:12.365 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <--cn.bing.com/202.89.233.100:443
+11:23:12.366 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <--cn.bing.com/202.89.233.100:443
+11:23:12.369 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <--cn.bing.com/202.89.233.100:443
+11:23:12.369 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1 <--cn.bing.com/202.89.233.100:443
+11:23:12.378 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求93 -->cn.bing.com/202.89.233.100:443
+11:23:12.382 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求1022 -->cn.bing.com/202.89.233.100:443
+...
+...
+11:23:13.281 [localSelector] INFO com.arloor.proxyme.LocalSelector - 接收浏览器连接: /127.0.0.1:50319
+11:23:13.282 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 请求—— GET http://s.cn.bing.net/th?id=OSA.xiipvhS2Pp2bEg&w=80&h=80&c=8&rs=1&pid=SatAns HTTP/1.1
+11:23:13.382 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 创建远程连接: s.cn.bing.net/112.84.133.11:80
+11:23:13.383 [remoteSlector] INFO com.arloor.proxyme.RemoteSelector - 注册remoteChannel到remoteSelector。remoteChannel: s.cn.bing.net/112.84.133.11:80
+11:23:13.383 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求340 -->s.cn.bing.net/112.84.133.11:80
+11:23:13.383 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求409 -->s.cn.bing.net/112.84.133.11:80
 ```
 
 ## 性能与内存

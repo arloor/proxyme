@@ -228,7 +228,7 @@ public class ChannalBridge {
                 remoteSelectionKey=null;
             }
             if(readNum>0){
-                logger.info("接收响应"+readNum+" <-- "+remoteChannel.getRemoteAddress());
+                logger.info("接收响应"+readNum+" <--"+remoteChannel.getRemoteAddress());
                 remote2LocalBuff.flip();
 //                System.out.println(new String(remote2LocalBuff.array()));
                 try {
