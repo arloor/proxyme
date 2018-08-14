@@ -14,8 +14,8 @@ public class ResponseHelper {
     }
     public static byte[] httpsTunnelEstablished(){
         StringBuilder sb=new StringBuilder();
-        sb.append("HTTP/1.0 200 Connection Established\r\n");
-        sb.append("Proxy-agent: Netscape-Proxy/1.1\r\n");
+        sb.append("HTTP/1.1 200 Connection Established\r\n");
+        sb.append("Proxy-agent: https://github.com/arloor/proxyme\r\n");
         sb.append("\r\n");
         return sb.toString().getBytes();
     }
