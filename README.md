@@ -55,3 +55,26 @@ http代理不神秘。
 这就带来新的任务啦。读写channel可以用线程池搞。多弄几个线程用于读写。这也不是难事。
 
 另外上传文件（向远程的请求过快过大）会失败，写的byte数为0，这也是一个问题。很可能是tcp缓冲区的问题。
+
+## 运行日志
+
+```
+11:14:31.760 [localSelector] INFO com.arloor.proxyme.LocalSelector - 接收浏览器连接: /127.0.0.1:50057
+11:14:31.760 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 请求—— CONNECT www.bing.com:443 HTTP/1.1
+11:14:31.838 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 创建远程连接: www.bing.com/202.89.233.101:443
+11:14:31.838 [remoteSlector] INFO com.arloor.proxyme.RemoteSelector - 注册remoteChannel到remoteSelector。remoteChannel: www.bing.com/202.89.233.101:443
+11:14:31.838 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求517 -->www.bing.com/202.89.233.101:443
+11:14:31.947 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应2720 <-- www.bing.com/202.89.233.101:443
+11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <-- www.bing.com/202.89.233.101:443
+11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1360 <-- www.bing.com/202.89.233.101:443
+11:14:31.963 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应1361 <-- www.bing.com/202.89.233.101:443
+11:14:31.963 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求93 -->www.bing.com/202.89.233.101:443
+11:14:31.963 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求811 -->www.bing.com/202.89.233.101:443
+11:14:32.041 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应120 <-- www.bing.com/202.89.233.101:443
+11:14:32.041 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求38 -->www.bing.com/202.89.233.101:443
+11:14:32.119 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应38 <-- www.bing.com/202.89.233.101:443
+11:14:32.166 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应481 <-- www.bing.com/202.89.233.101:443
+11:14:32.181 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应38 <-- www.bing.com/202.89.233.101:443
+11:14:32.244 [localSelector] INFO com.arloor.proxyme.ChannalBridge - 发送请求260 -->www.bing.com/202.89.233.101:443
+11:14:32.369 [remoteSlector] INFO com.arloor.proxyme.ChannalBridge - 接收响应421 <-- www.bing.com/202.89.233.101:443
+```
