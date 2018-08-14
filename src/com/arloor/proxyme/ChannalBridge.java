@@ -183,7 +183,7 @@ public class ChannalBridge {
                 return;
             }
             int writeNum= remoteChannel.write(local2RemoteBuff);
-//            logger.info(writeNum+" 向"+remoteChannel+"写了这么多字节");
+            logger.info("发送请求"+writeNum+" -->"+remoteChannel.getRemoteAddress());
         }catch (NullPointerException e){
             if(remoteChannel==null){
                 logger.warn("试图写已为null的remoteChannel："+e.getMessage()+"——已经解决了这个问题，就是在试图写到remoteChnanel前判断是否为null");
@@ -228,7 +228,7 @@ public class ChannalBridge {
                 remoteSelectionKey=null;
             }
             if(readNum>0){
-                logger.info("接收响应 "+remoteChannel.getRemoteAddress());
+                logger.info("接收响应"+readNum+" <-- "+remoteChannel.getRemoteAddress());
                 remote2LocalBuff.flip();
 //                System.out.println(new String(remote2LocalBuff.array()));
                 try {
