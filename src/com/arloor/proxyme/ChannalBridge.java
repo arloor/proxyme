@@ -21,7 +21,7 @@ public class ChannalBridge {
     private int port;
     private boolean isHttpsTunnel=false;//标记位 这个bridge是否是https隧道
 
-    private static Logger logger=LoggerFactory.getLogger(ChannalBridge.class);
+    private static Logger logger=LoggerFactory.getLogger(ChannalBridge.class.getSimpleName());
 
     public ChannalBridge(SocketChannel localChannel) {
         this.localChannel = localChannel;

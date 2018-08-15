@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 public class RemoteSelector implements Runnable {
-    private static Logger logger = LoggerFactory.getLogger(RemoteSelector.class);
+    private static Logger logger = LoggerFactory.getLogger(RemoteSelector.class.getSimpleName());
     private Selector selectorRemote;
     private final static RemoteSelector instance = new RemoteSelector();
     //这个队列用于保存在LocalSelector线程中创建的到远程服务器的channel

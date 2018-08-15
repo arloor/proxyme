@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public class HttpProxyBootStrap {
 
-    private static Logger logger=LoggerFactory.getLogger(HttpProxyBootStrap.class);
+    private static Logger logger=LoggerFactory.getLogger(HttpProxyBootStrap.class.getSimpleName());
 
     public static void main(String[] args) {
         LocalSelector localSelector =LocalSelector.getInstance();

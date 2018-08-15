@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class LocalSelector implements Runnable {
-    private static Logger logger = LoggerFactory.getLogger(LocalSelector.class);
+    private static Logger logger = LoggerFactory.getLogger(LocalSelector.class.getSimpleName());
     private Selector selectorLocal;
     private ServerSocketChannel acceptChannel;
     private final static LocalSelector instance = new LocalSelector();
