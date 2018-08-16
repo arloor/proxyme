@@ -79,6 +79,7 @@ public class LocalSelector implements Runnable {
 
     private void listenLocalChannel(SocketChannel localChanel, ChannalBridge channalBridge) {
         try {
+            selectorLocal.wakeup();
             localChanel.register(selectorLocal, SelectionKey.OP_READ, channalBridge);
             channalBridge.setLocalSelectionKey(localChanel.keyFor(selectorLocal));
         } catch (ClosedChannelException e) {
