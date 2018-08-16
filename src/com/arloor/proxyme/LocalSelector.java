@@ -70,7 +70,6 @@ public class LocalSelector implements Runnable {
             localChanel.configureBlocking(false);
             logger.info("接收浏览器连接: " + localChanel.getRemoteAddress());
             ChannalBridge channalBridge = new ChannalBridge(localChanel);
-//            channalBridgeHub.add(channalBridge);
             this.listenLocalChannel(localChanel, channalBridge);
         } catch (IOException e) {
             e.printStackTrace();
@@ -79,7 +78,6 @@ public class LocalSelector implements Runnable {
 
     private void listenLocalChannel(SocketChannel localChanel, ChannalBridge channalBridge) {
         try {
-            selectorLocal.wakeup();
             localChanel.register(selectorLocal, SelectionKey.OP_READ, channalBridge);
             channalBridge.setLocalSelectionKey(localChanel.keyFor(selectorLocal));
         } catch (ClosedChannelException e) {
