@@ -4,7 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -124,10 +127,26 @@ public class ChannalBridge {
         this.host = host;
         this.port = port;
         try {
-            remoteChannel = SocketChannel.open(new InetSocketAddress(host, port));
-        } catch (Exception e) {
+            //设置连接超时时间1s
+            remoteChannel=SocketChannel.open();
+            remoteChannel.socket().connect(new InetSocketAddress(host, port),1000);
+//未作超时处理            remoteChannel = SocketChannel.open(new InetSocketAddress(host, port));
+        }catch (SocketTimeoutException e){
             //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
-            logger.warn("连接到web服务器失败，返回404响应，关闭localChannel");
+            logger.warn("连接超时 -->"+host+"，返回404响应，关闭localChannel");
+            //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
+            byte[] response404 = ResponseHelper.http404();
+            local2RemoteBuff.put(response404);
+            local2RemoteBuff.flip();
+            localChannel.write(local2RemoteBuff);
+            local2RemoteBuff.clear();
+            localChannel.close();
+            localSelectionKey.cancel();
+            return false;
+        }catch (Exception e) {
+
+            //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
+            logger.warn("连接失败 -->"+host+"，返回404响应，关闭localChannel");
             //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
             byte[] response404 = ResponseHelper.http404();
             local2RemoteBuff.put(response404);
