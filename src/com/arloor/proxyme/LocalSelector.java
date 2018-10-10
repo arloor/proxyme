@@ -22,12 +22,22 @@ public class LocalSelector implements Runnable {
 
 
     private LocalSelector() {
+
+    }
+
+    public void init(){
+        init(8081);
+    }
+
+    public void init(int port){
         try {
             this.selectorLocal = Selector.open();
             acceptChannel = ServerSocketChannel.open();
-            acceptChannel.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 8080));
+
+            acceptChannel.bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
             acceptChannel.configureBlocking(false);
             acceptChannel.register(selectorLocal, SelectionKey.OP_ACCEPT);
+            logger.info("在"+InetAddress.getLocalHost().getHostAddress()+":"+port+"端口启动了代理服务");
         } catch (IOException e) {
             e.printStackTrace();
         }

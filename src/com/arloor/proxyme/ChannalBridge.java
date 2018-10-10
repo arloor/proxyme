@@ -129,7 +129,7 @@ public class ChannalBridge {
         try {
             //设置连接超时时间1s
             remoteChannel=SocketChannel.open();
-            remoteChannel.socket().connect(new InetSocketAddress(host, port),700);
+            remoteChannel.socket().connect(new InetSocketAddress(host, port),3000);
 //未作超时处理            remoteChannel = SocketChannel.open(new InetSocketAddress(host, port));
         }catch (SocketTimeoutException e){
             //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
