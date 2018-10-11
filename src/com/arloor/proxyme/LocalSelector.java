@@ -37,7 +37,7 @@ public class LocalSelector implements Runnable {
             acceptChannel.bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
             acceptChannel.configureBlocking(false);
             acceptChannel.register(selectorLocal, SelectionKey.OP_ACCEPT);
-            logger.info("在"+InetAddress.getLocalHost().getHostAddress()+":"+port+"端口启动了代理服务");
+            logger.info("在"+InetAddress.getLocalHost().getHostAddress()+":"+port+"端口启动了代理服务。注意可能非127.0.0.1");
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -4,9 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -127,16 +125,20 @@ public class ChannalBridge {
         this.host = host;
         this.port = port;
         try {
+            if(host.contains("google")||host.contains("youtube")||host.contains("ofacebook")){
+                logger.warn("不处理墙外网站: "+host);
+                throw new Exception("墙外网站，不进行处理——抛出异常已回复浏览器404");
+            }
             //设置连接超时时间1s
             remoteChannel=SocketChannel.open();
             remoteChannel.socket().connect(new InetSocketAddress(host, port),3000);
 //未作超时处理            remoteChannel = SocketChannel.open(new InetSocketAddress(host, port));
         }catch (SocketTimeoutException e){
             //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
-            logger.warn("连接超时 -->"+host+"，返回404响应，关闭localChannel");
-            //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
-            byte[] response404 = ResponseHelper.http404();
-            local2RemoteBuff.put(response404);
+            logger.warn("连接超时 -->"+host+"，返回503响应，关闭localChannel");
+            //给浏览器一个503的返回。如果不返回。。它会等很久。。并且还会重试
+            byte[] response503 = ResponseHelper.http503Error();
+            local2RemoteBuff.put(response503);
             local2RemoteBuff.flip();
             localChannel.write(local2RemoteBuff);
             local2RemoteBuff.clear();
@@ -146,10 +148,10 @@ public class ChannalBridge {
         }catch (Exception e) {
 
             //健壮性：如果无法连接远程服务器，不做处理这个线程会退出
-            logger.warn("连接失败 -->"+host+"，返回404响应，关闭localChannel");
-            //给浏览器一个404的返回。如果不返回。。它会等很久。。并且还会重试
-            byte[] response404 = ResponseHelper.http404();
-            local2RemoteBuff.put(response404);
+            logger.warn("连接失败 -->"+host+"，返回503响应，关闭localChannel");
+            //给浏览器一个503的返回。如果不返回。。它会等很久。。并且还会重试
+            byte[] response503 = ResponseHelper.http503Error();
+            local2RemoteBuff.put(response503);
             local2RemoteBuff.flip();
             localChannel.write(local2RemoteBuff);
             local2RemoteBuff.clear();
@@ -199,10 +201,12 @@ public class ChannalBridge {
 //        }
         local2RemoteBuff.limit(numRead);
         try {
-            if (remoteChannel == null) {
-                return;
-            }
+
             while (local2RemoteBuff.hasRemaining()) {
+                //这个判断是增强健壮性
+                if (remoteChannel == null) {
+                    return;
+                }
                 int writeNum = remoteChannel.write(local2RemoteBuff);
                 logger.info("发送请求" + writeNum + " -->" + remoteChannel.getRemoteAddress());
                 if (writeNum == 0) {
