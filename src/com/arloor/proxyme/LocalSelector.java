@@ -25,20 +25,19 @@ public class LocalSelector implements Runnable {
 
     }
 
-    public void init(){
-        init(8081);
-    }
-
-    public void init(int port){
+    public void init(String host,int port){
         try {
             this.selectorLocal = Selector.open();
             acceptChannel = ServerSocketChannel.open();
-
-            acceptChannel.bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
+            InetSocketAddress serverSocketAddr=new InetSocketAddress(host, port);
+            if(host.equals("localhost")){
+                serverSocketAddr=new InetSocketAddress(InetAddress.getLocalHost(),port);
+            }
+                logger.info("在"+serverSocketAddr.getAddress().getHostAddress()+":"+port+"端口启动了代理服务。注意可能非127.0.0.1");
+            acceptChannel.bind(serverSocketAddr);
             acceptChannel.configureBlocking(false);
             acceptChannel.register(selectorLocal, SelectionKey.OP_ACCEPT);
-            logger.info("在"+InetAddress.getLocalHost().getHostAddress()+":"+port+"端口启动了代理服务。注意可能非127.0.0.1");
-        } catch (IOException e) {
+            } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -99,4 +98,6 @@ public class LocalSelector implements Runnable {
     public void run() {
         this.listen();
     }
+
+
 }
