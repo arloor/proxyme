@@ -14,10 +14,10 @@ public class HttpProxyBootStrap {
             for (String arg : args
             ) {
                 String[] nameValue = arg.split("=");
-                if (nameValue[0].equals("host") && !nameValue[1].isBlank()) {
+                if (nameValue[0].equals("host") && nameValue[1].replace(" ","").length()>0) {
                     host = nameValue[1];
                 }
-                if (nameValue[0].equals("port") && !nameValue[1].isBlank()) {
+                if (nameValue[0].equals("port") && nameValue[1].replace(" ","").length()>0) {
                     port = Integer.parseInt(nameValue[1]);
                 }
             }
