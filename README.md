@@ -1,6 +1,8 @@
 # proxyme 一个http代理
 
-使用java NIO的http代理。支持https。建议不要再chrome上使用本代理，因为chrome本身会请求很多谷歌的api，结果被墙住了，又只有两个线程，导致其他都被阻塞，很尴尬。
+使用java NIO的http代理。支持https。
+
+因为墙的原因，这个代理不会处理域名中有`google`、`youtube`、`facebook`的请求。
 
 之前也打算做过这个东西，结果做出来的有点缺陷（现在想可能是selector中锁的问题，忘记了）。这大概隔了半年，这个项目的http代理功能实现了。
 
@@ -73,6 +75,43 @@ selector.select()会占有锁，channel.register(selector)需要持有同样的�
 还有一个小问题，向remoteChannel 写的时候，有时候会写0个字节，原因是底层tcp缓冲满了，我的处理是等0.1秒，再继续传。当然设置OP_WRITE这个监听选项的目的就是处理这种情况。
 
 http代理不神秘。
+
+## 命令行参数
+
+可以添加两个命令行参数： `host=xxxx port=8080`
+
+如果不设置这两个参数： 本地代理将使用`InetAddress.getLocalhost()`的ip和`8080`的端口。
+
+注意，一台电脑会有好几个ip地址。如果使用127.0.0.1，则该代理只可以在本机上使用。如果使用局域网地址（最常见的是192.168.x.x），并合理配置jdk的防火墙权限，则可以在局域网中使用该代理。
+
+那么如何把该代理部署到云服务器上？如下：
+
+```
+[root@VM_26_36_centos ~]ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.154.26.36  netmask 255.255.192.0  broadcast 10.154.63.255
+        ether 52:54:00:b5:bb:6a  txqueuelen 1000  (Ethernet)
+        RX packets 41677295  bytes 5458697312 (5.0 GiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 41351236  bytes 5660742157 (5.2 GiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 3370828  bytes 195574819 (186.5 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 3370828  bytes 195574819 (186.5 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+[root@VM_26_36_centos ~]# java -jar proxyme.jar host=10.154.26.36
+15:09:03.245 [main] WARN HttpProxyBootStrap - 提示：允许携带两个命令行参数 host=xxx port=1234
+15:09:03.337 [main] INFO LocalSelector - 在10.154.26.36:8080端口启动了代理服务。注意可能非127.0.0.1
+```
+
+先ifconfig找到自己的云服务器内网地址（其实和局域网地址一个意思），然后在启动的命令行参数中，增加`host=内网地址`，进行启动。当然还需要配置防火墙。配好之后就可以连上服务器使用代理了。
+
+不过，不可以用来翻墙。。
 
 ## 可以改进的地方
 
