@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.channels.*;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -25,6 +25,29 @@ public class LocalSelector implements Runnable {
 
     }
 
+
+    //可靠的获取非回环本机ip方法
+    private InetAddress getLocalhost() throws UnknownHostException {
+        try {
+            for (Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements();) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (networkInterface.isLoopback() || networkInterface.isVirtual() || !networkInterface.isUp()) {
+                    continue;
+                }
+                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+                if (addresses.hasMoreElements()) {
+                    InetAddress address = addresses.nextElement();
+                    if(address instanceof Inet4Address) {
+                        return address;
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            logger.debug("Error when getting host ip address: <{}>.", e.getMessage());
+        }
+        return InetAddress.getLocalHost();
+    }
+
     public void init(){
         init(8081);
     }
@@ -34,10 +57,12 @@ public class LocalSelector implements Runnable {
             this.selectorLocal = Selector.open();
             acceptChannel = ServerSocketChannel.open();
 
-            acceptChannel.bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
+            InetAddress serverAddress=getLocalhost();
+
+            acceptChannel.bind(new InetSocketAddress(serverAddress, port));
             acceptChannel.configureBlocking(false);
             acceptChannel.register(selectorLocal, SelectionKey.OP_ACCEPT);
-            logger.info("在"+InetAddress.getLocalHost().getHostAddress()+":"+port+"端口启动了代理服务。注意可能非127.0.0.1");
+            logger.info("在"+serverAddress.getHostAddress()+":"+port+"端口启动了代理服务。注意可能非127.0.0.1");
         } catch (IOException e) {
             e.printStackTrace();
         }
