@@ -1,3 +1,5 @@
+> 这是我早期学习java NIO时做的项目，现在基本都是通过Netty来做NIO，不会有人直接把java NIO用在生产环境了。所以这个项目对大多数人的意义应该是用于学习java NIO的example。当然不是说了解java NIO没有意义，了解了java NIO，你才能知道Netty是怎么工作的。想要完整功能的httpproxy可以看看这个项目[HttpProxy](https://github.com/arloor/HttpProxy)
+
 # proxyme 一个http代理
 
 使用java NIO的http代理。支持https。
@@ -60,7 +62,7 @@ RequestHeader类，职责是格式化请求行和请求头。
 
 selector.select()会占有锁，channel.register(selector)需要持有同样的锁。
 
-如果调用上面的两个方法的语句在两个线程中，会让channel.regiter等很久很久，导致响应难以及时得到。
+如果调用上面的两个方法的语句在两个线程中，会让channel.regiter等很久很久，导致响应难以及时得到。具体分析可以看看netty是怎么做的，见[从register和accept的锁竞争问题到netty的nioEventLoop设计](https://www.arloor.com/posts/netty/select-register-nioeventloop/)
 
 而在实现中，这是一个生产者消费者问题。localSelector线程根据本地浏览器请求产生了一个从代理到web服务器的remoteChannel。而remoteSelector要接收这个remoteChannel,这也就是消费了。
 
